@@ -1,6 +1,6 @@
 {
-  "name": "my-chrome-extension",
-  "description": "Template for a chrome extension (manifest v3)",
+  "name": "Big mute",
+  "description": "Adds a big mute button to any website",
   "version": "1.0",
   "manifest_version": 3,
   "permissions": ["storage", "tabs"],
