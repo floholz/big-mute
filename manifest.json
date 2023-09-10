@@ -3,7 +3,11 @@
   "description": "Adds a big mute button to any website",
   "version": "1.0",
   "manifest_version": 3,
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "scripting", "favicon"],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "icons": {
     "16": "/images/icon-16.png",
     "32": "/images/icon-32.png",
@@ -22,15 +26,6 @@
       "128": "/images/icon-128.png"
     }
   },
-  "content_scripts": [
-    {
-      "js": ["content.js"],
-      "matches": [
-        "https://developer.chrome.com/docs/extensions/*",
-        "https://developer.chrome.com/docs/webstore/*"
-      ]
-    }
-  ],
     "commands": {
       "_execute_action": {
         "suggested_key": {
