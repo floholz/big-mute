@@ -13,36 +13,15 @@ chrome.runtime.onInstalled.addListener(({reason}) => {
     }
   });
 
-/*
-
-chrome.tabs.onActivated.addListener(executeScriptOnActiveTab);
-async function executeScriptOnActiveTab(activeInfo) {
-    try {
-        // await chrome.scripting.executeScript({
-        //     target : {tabId : activeInfo.tabId},
-        //     files : [ "script.js" ],
-        // }).then(() => console.log("script injected"));
-
-        activeInfo
-
-        const scripts = await chrome.scripting.getRegisteredContentScripts();
-        console.log(scripts);
-
-        await chrome.scripting.registerContentScripts([
-            {
-                "id": "dhskdhkasdhk",
-                "js": ["script.js"],
-                "matches": [
-                    "https://developer.chrome.com/*"
-                ]
-            }
-        ]);
-
-    } catch (error) {
-        console.error(error);
+chrome.runtime.onMessage.addListener((message, sender) => {
+    const msg = message.split(' ');
+    if (msg[0] === 'bigMute') {
+        console.log(sender);
+        if (msg[1] === 'mute') {
+            toggleMuteState(sender.tab.id);
+        }
     }
-}
-
+});
 
 async function getCurrentTab() {
     let queryOptions = { active: true, lastFocusedWindow: true };
@@ -51,4 +30,9 @@ async function getCurrentTab() {
     return tab;
 }
 
-*/
+async function toggleMuteState(tabId) {
+    const tab = await chrome.tabs.get(tabId);
+    const muted = !tab.mutedInfo.muted;
+    await chrome.tabs.update(tabId, {muted});
+    console.log(`Tab ${tab.id} is ${muted ? "muted" : "unmuted"}`);
+}
