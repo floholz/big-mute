@@ -129,6 +129,7 @@ main {
 #add-url-input {
     flex: auto;
     border: none;
+    padding: 0.5em 0.5em 0.5em 1em;
 }
 
 #add-url-button {
@@ -137,6 +138,8 @@ main {
     border: inherit;
     color: var(--color_primary);
     background-color: var(--color_secondary);
+    padding: 0.5em 1em;
+    font-weight: bold;
 }
 
 #add-active-url-button {
@@ -147,6 +150,8 @@ main {
     color: var(--color_primary);
     border: 2px solid var(--color_secondary);
     border-radius: var(--dim_button_border_radius);
+    padding: 0.5em 1em;
+    font-weight: bold;
 }
 
 #add-active-url-text {

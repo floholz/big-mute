@@ -14,6 +14,7 @@ async function toggleMuteState(tabId) {
 }
 */
 
+import {urlToEntry, urlToId} from "../util/utils.js";
 
 async function INIT_EXTENSION() {
 
@@ -111,6 +112,10 @@ async function INIT_EXTENSION() {
 
 
 async function addUrlToList(url) {
+    if (url.protocol !== 'http:' && url.protocol !== 'https:'){
+        return;
+    }
+
     const data = await chrome.storage.sync.get({urlList: []});
     const urlSet = new Set(data.urlList);
     console.log('old', urlSet);
@@ -178,14 +183,6 @@ function emptyElementIsShown(isShown) {
     document.getElementById('empty-url-item').style.display = isShown ? 'block' : 'none';
 }
 
-function urlToId(url) {
-    return 'url-list-item-' + url.hostname.replaceAll('.', '_');
-}
-
-function urlToEntry(url) {
-    return `${url.protocol}//${url.hostname}/`;
-}
-
 function getFaviconURL(url) {
     // chrome-extension://EXTENSION_ID/_favicon/?pageUrl=https://www.youtube.com/&size=32
     const favIconUrl = new URL(chrome.runtime.getURL('/_favicon/'));
@@ -205,8 +202,8 @@ async function registerContentScript(url) {
     const urlEntry = urlToEntry(url);
     chrome.scripting.registerContentScripts([{
         id: urlToId(url),
-        js: ["content.js"],
-        css: ['content.css'],
+        js: ["src/content/content.js"],
+        css: ['src/content/content.css'],
         persistAcrossSessions: true,
         matches: [urlEntry + '*'],
         runAt: "document_idle",
@@ -219,3 +216,4 @@ async function registerContentScript(url) {
 
 /* init popup page */
 void INIT_EXTENSION();
+console.log('INIT_EXTENSION');

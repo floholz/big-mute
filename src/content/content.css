@@ -1,0 +1,53 @@
+:root {
+    /* colors */
+    --color_primary: #F9F9F9;
+    --color_secondary: #4D00CB;
+    --color_secondary_transparent: rgba(77, 0, 203, 0.4);
+    --color_text: #1D1B20;
+    --color_text_gray: #8c8c8c;
+}
+
+#bigMute_container {
+    position: fixed;
+    inset: 0;
+    z-index: 9999999;
+    pointer-events: none;
+    font-size: 64px;
+}
+
+#bigMute_button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2em;
+    height: 2em;
+    border: 2px solid var(--color_secondary);
+    border-radius: 50%;
+    position: absolute;
+    top: auto;
+    bottom: auto;
+    left: 2em;
+    font-size: 4em;
+    font-weight: bold;
+    pointer-events: auto;
+    cursor: pointer;
+    background-color: transparent;
+    color: var(--color_secondary);
+    opacity: 0;
+    transition: background-color, color, border-top-color, border-right-color, border-bottom-color, border-left-color, opacity 200ms ease-in-out;
+    transition-duration: 100ms;
+    transition-timing-function: ease-in-out;
+}
+
+#bigMute_button:hover {
+    background-color: var(--color_secondary_transparent);
+    color: var(--color_primary);
+    border-color: var(--color_secondary);
+    opacity: 1;
+}
+
+#bigMute_button.moving:not(:hover) {
+    opacity: 0.8;
+}
+
+
