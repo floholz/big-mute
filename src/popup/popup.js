@@ -24,6 +24,7 @@ async function INIT_EXTENSION() {
         const url = new URL(activeTab.url);
         document.getElementById('add-active-url-text').innerText = urlToEntry(url);
         document.getElementById('add-active-url-button').addEventListener('click', async () => {
+            console.log(activeTab.faviconUrl);
             await addUrlToList(new URL(url));
         });
     }
@@ -72,11 +73,14 @@ async function INIT_EXTENSION() {
     /* register storage change listener */
     chrome.storage.onChanged.addListener((changes, area) => {
         for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-            if (area === 'sync') {
+            if (area === 'sync' && key === 'urlList') {
                 console.log(
                     `Storage key "${key}" in namespace "${area}" changed.`,
                     `Old value was "${oldValue}", new value is "${newValue}".`
                 );
+
+                oldValue = oldValue?? [];
+                newValue = newValue?? [];
 
                 const added = new Set(newValue);
                 for (const element of oldValue) {
@@ -96,6 +100,7 @@ async function INIT_EXTENSION() {
                 }
                 for (const entry of removed) {
                     const url = new URL(entry);
+                    unregisterContentScript(url);
                     const elementToRemove = document.getElementById(urlToId(url));
                     elementToRemove?.remove();
                 }
@@ -124,6 +129,26 @@ async function addUrlToList(url) {
     console.log('new', urlSet);
 
     chrome.storage.sync.set({urlList: [...urlSet]});
+
+
+
+
+    let bigData = await  chrome.storage.sync.get(["bigMute"]);
+
+    const newBigData = bigData.bigMute ?? { urls: [] };
+
+    if (newBigData.urls.some(elem => elem.id === urlToId(url))){
+        return;
+    }
+
+    newBigData.urls.push({
+        id: urlToId(url),
+        entry: urlToEntry(url),
+        pos: {x: 200, y: 100}
+    });
+    chrome.storage.sync.set({['bigMute']: newBigData});
+
+    console.log('bigMute', newBigData);
 }
 
 async function removeUrlFromList(urlEntry) {
@@ -210,6 +235,13 @@ async function registerContentScript(url) {
     }])
     .then(() => console.log("Registered script for " + urlEntry))
     .catch((err) => console.warn("Could not register script!", err));
+}
+
+async function unregisterContentScript(url) {
+    const urlEntry = urlToEntry(url);
+    chrome.scripting.unregisterContentScripts({ids: [urlToId(url)]})
+        .then(() => console.log("Unregister script for " + urlEntry))
+        .catch((err) => console.warn("Could not unregister script!", err));
 }
 
 

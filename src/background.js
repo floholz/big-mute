@@ -35,6 +35,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.bigMute.toggleMute) {
             toggleMuteState(sender.tab).then(sendResponse);
         }
+        if (message.bigMute.getMuteState) {
+            sendResponse(sender.tab.mutedInfo.muted);
+        }
     }
     return true;
 });

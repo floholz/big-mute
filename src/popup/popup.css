@@ -4,6 +4,7 @@
     --color_secondary: #4D00CB;
     --color_text: #1D1B20;
     --color_text_gray: #8c8c8c;
+    --color_secondary_transparent: rgba(77, 0, 203, 0.1);
 
     /* dimensions */
     --dim_button_border_radius: 4px;
@@ -86,6 +87,11 @@ main {
     align-items: center;
     justify-content: center;
     gap: 0.625rem;
+    border-radius: 0.5rem;
+}
+
+.url-list-item:hover {
+    background-color: var(--color_secondary_transparent);
 }
 
 .url-list-item-icon {
