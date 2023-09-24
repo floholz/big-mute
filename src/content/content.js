@@ -35,10 +35,12 @@ bigMuteMinimize.onmouseup = (e) =>  {
         bigMuteButton.classList.add('minimized');
         bigMuteContent.classList.add('minimized');
         bigMuteMinimize.classList.add('minimized');
+        bigMuteMainElement.classList.add('minimized');
     } else {
         bigMuteButton.classList.remove('minimized');
         bigMuteContent.classList.remove('minimized');
         bigMuteMinimize.classList.remove('minimized');
+        bigMuteMainElement.classList.remove('minimized');
     }
 
     e.preventDefault();
@@ -101,7 +103,7 @@ document.addEventListener('mousemove', function() {
     timer = setTimeout(() => {
         bigMuteMainElement.classList.remove('moving')
         timer = null;
-    }, 500);
+    }, 650);
 });
 
 getCurrentMuteState().then(setMuteButtonContent);

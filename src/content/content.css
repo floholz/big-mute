@@ -35,6 +35,10 @@
     transition-timing-function: ease-in-out;
 }
 
+#bigMute_main.minimized {
+    border-radius: 50%;
+}
+
 #bigMute_minimize {
     overflow: clip;
     position: absolute;
@@ -51,7 +55,7 @@
     cursor: pointer;
 }
 #bigMute_minimize.minimized {
-    font-size: 0.8em;
+    position: relative;
 }
 
 #bigMute_content {
@@ -61,7 +65,7 @@
     color: inherit;
 }
 #bigMute_content.minimized {
-    padding: 0.3em;
+
 }
 
 #bigMute_button {
@@ -77,7 +81,7 @@
     cursor: pointer;
 }
 #bigMute_button.minimized {
-    font-size: 1.8em;
+    display: none;
 }
 
 #bigMute_main:hover {
