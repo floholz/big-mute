@@ -15,39 +15,76 @@
     font-size: 64px;
 }
 
-#bigMute_button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2em;
-    height: 2em;
-    border: 2px solid var(--color_secondary);
-    border-radius: 50%;
+#bigMute_main {
     position: absolute;
     top: 50%;
     left: 50%;
-    font-size: 4em;
-    font-weight: bold;
-    pointer-events: auto;
-    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    border: 2px solid var(--color_secondary);
+    border-radius: 10% 50% 50% 50%;
     background-color: transparent;
     color: var(--color_secondary);
+    font-size: 1em;
+    pointer-events: auto;
+    cursor: default;
     opacity: 0;
     transition: background-color, color, border-top-color, border-right-color, border-bottom-color, border-left-color, opacity 200ms ease-in-out;
     transition-duration: 100ms;
     transition-timing-function: ease-in-out;
-    overflow: clip;
 }
 
-#bigMute_button:hover {
+#bigMute_minimize {
+    overflow: clip;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: rotateZ(45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    font-size: 1.5em;
+    cursor: pointer;
+}
+#bigMute_minimize.minimized {
+    font-size: 0.8em;
+}
+
+#bigMute_content {
+    overflow: clip;
+    padding: 0.5em;
+    pointer-events: none;
+    color: inherit;
+}
+#bigMute_content.minimized {
+    padding: 0.3em;
+}
+
+#bigMute_button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 4em;
+    font-weight: bold;
+    background-color: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+#bigMute_button.minimized {
+    font-size: 1.8em;
+}
+
+#bigMute_main:hover {
     background-color: var(--color_secondary_transparent);
     color: var(--color_primary);
-    border-color: var(--color_secondary);
     opacity: 1;
 }
 
-#bigMute_button.moving:not(:hover) {
-    opacity: 0.8;
+#bigMute_main.moving:not(:hover) {
+    opacity: 0.6;
 }
 
 
