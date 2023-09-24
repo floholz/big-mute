@@ -1,18 +1,5 @@
-/*
-document.getElementById('popup-btn').addEventListener('click', async () => {
-    const currentTab = await getCurrentTab();
-    console.log(currentTab);
-
-    await toggleMuteState(currentTab.id);
-});
-
-async function toggleMuteState(tabId) {
-    const tab = await chrome.tabs.get(tabId);
-    const muted = !tab.mutedInfo.muted;
-    await chrome.tabs.update(tabId, {muted});
-    console.log(`Tab ${tab.id} is ${muted ? "muted" : "unmuted"}`);
-}
-*/
+// todo: save states, position
+// todo: add pause
 
 import {urlToEntry, urlToId} from "../util/utils.js";
 
