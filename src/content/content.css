@@ -13,6 +13,15 @@
     z-index: 9999999;
     pointer-events: none;
     font-size: 64px;
+
+    --bigMute_main__border-radius: 10% 50% 50% 50%;
+    --bigMute_minimize__position: absolute;
+    --bigMute_button__display: flex;
+}
+#bigMute_container.minimized {
+    --bigMute_main__border-radius: 50%;
+    --bigMute_minimize__position: relative;
+    --bigMute_button__display: none;
 }
 
 #bigMute_main {
@@ -23,7 +32,7 @@
     align-items: flex-start;
     justify-content: flex-start;
     border: 2px solid var(--color_secondary);
-    border-radius: 10% 50% 50% 50%;
+    border-radius: var(--bigMute_main__border-radius);
     background-color: transparent;
     color: var(--color_secondary);
     font-size: 1em;
@@ -41,7 +50,7 @@
 
 #bigMute_minimize {
     overflow: clip;
-    position: absolute;
+    position: var(--bigMute_minimize__position);
     top: 0;
     left: 0;
     transform: rotateZ(45deg);
@@ -65,12 +74,9 @@
     pointer-events: none;
     color: inherit;
 }
-#bigMute_content.minimized {
-
-}
 
 #bigMute_button {
-    display: flex;
+    display: var(--bigMute_button__display);
     align-items: center;
     justify-content: center;
     border: none;

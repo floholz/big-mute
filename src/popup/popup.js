@@ -1,6 +1,3 @@
-// todo: save states, position
-// todo: add pause
-
 import {urlToEntry, urlToId} from "../util/utils.js";
 
 async function INIT_EXTENSION() {
@@ -9,90 +6,93 @@ async function INIT_EXTENSION() {
     const activeTab = await getCurrentTab();
     if (activeTab) {
         const url = new URL(activeTab.url);
-        document.getElementById('add-active-url-text').innerText = urlToEntry(url);
+        const urlEntry = urlToEntry(url);
+        document.getElementById('add-active-url-text').innerText = urlEntry;
         document.getElementById('add-active-url-button').addEventListener('click', async () => {
-            console.log(activeTab.faviconUrl);
             await addUrlToList(new URL(url));
+        });
+        validateUrl(urlEntry).then(result => {
+            if (!result.valid) {
+                document.getElementById('add-active-url-button').setAttribute('disabled', '');
+                console.log(result.message);
+            } else {
+                document.getElementById('add-active-url-button').removeAttribute('disabled');
+            }
         });
     }
 
     /* init add-url button */
     document.getElementById('add-url-button').addEventListener('click', async () => {
         const url = document.getElementById('add-url-input').value;
-        try {
-            await addUrlToList(new URL(url));
-        } catch (e) {
-            if (e instanceof TypeError) {
-                //todo: display invalid error
-                console.log(e.message);
-            } else {
-                console.error(e)
-            }
+
+        const result = await validateUrl(url);
+        if (!result.valid) {
+            console.log(result.message);
+            return;
         }
+
+        await addUrlToList(new URL(url));
     });
     document.getElementById('add-url-input').addEventListener('keydown', async (event) => {
-        if (event.key === 'Enter') {
-            const url = event.target.value;
-            try {
+        const url = event.target.value;
+        const result = await validateUrl(url);
+        if (result.valid) {
+            if (event.key === 'Enter') {
                 await addUrlToList(new URL(url));
-            } catch (e) {
-                if (e instanceof TypeError) {
-                    //todo: display invalid error
-                    console.log(e.message);
-                } else {
-                    console.error(e)
-                }
             }
         }
     });
 
-    /* init registered urls from storage */
-    chrome.storage.sync.get({urlList: []}, async (data) => {
-        const urlSet = new Set(data.urlList);
-        console.log(urlSet);
-        for (const entry of urlSet) {
-            console.log(entry);
-            createUrlElement(new URL(entry));
+    document.getElementById('add-url-input').addEventListener('input', async (event) => {
+        const result = await validateUrl(event.target.value);
+        if (!result.valid) {
+            document.getElementById('add-url-button').setAttribute('disabled', '');
+            document.getElementById('add-url').setAttribute('disabled', '');
+            console.log(result.message);
+        } else {
+            document.getElementById('add-url-button').removeAttribute('disabled');
+            document.getElementById('add-url').removeAttribute('disabled');
         }
-        emptyElementIsShown(urlSet.size === 0);
+    });
+
+    chrome.storage.sync.get(["bigMute"]).then(bigData => {
+        const bigMute = bigData.bigMute ?? { urls: [] };
+        for (const bigMuteElement of bigMute.urls) {
+            const url = new URL(bigMuteElement.entry);
+            createUrlElement(url);
+        }
+        emptyElementIsShown(bigMute.urls.length === 0);
     });
 
     /* register storage change listener */
     chrome.storage.onChanged.addListener((changes, area) => {
         for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-            if (area === 'sync' && key === 'urlList') {
-                console.log(
-                    `Storage key "${key}" in namespace "${area}" changed.`,
-                    `Old value was "${oldValue}", new value is "${newValue}".`
+            if (area === 'sync' && key === 'bigMute') {
+                oldValue = oldValue?? { urls: [] };
+                newValue = newValue?? { urls: [] };
+
+                const addedUrls = newValue.urls.filter(newElem =>
+                    !oldValue.urls.some(oldElem => oldElem.id === newElem.id)
                 );
+                console.log(addedUrls);
 
-                oldValue = oldValue?? [];
-                newValue = newValue?? [];
+                const removedUrls = oldValue.urls.filter(oldElem =>
+                    !newValue.urls.some(newElem => newElem.id === oldElem.id)
+                );
+                console.log(removedUrls);
 
-                const added = new Set(newValue);
-                for (const element of oldValue) {
-                    added.delete(element);
-                }
-                console.log(added);
-                const removed = new Set(oldValue);
-                for (const element of newValue) {
-                    removed.delete(element);
-                }
-                console.log(removed);
-
-                for (const entry of added) {
-                    const url = new URL(entry);
+                for (const elem of addedUrls) {
+                    const url = new URL(elem.entry);
                     registerContentScript(url);
                     createUrlElement(url);
                 }
-                for (const entry of removed) {
-                    const url = new URL(entry);
+                for (const elem of removedUrls) {
+                    const url = new URL(elem.entry);
                     unregisterContentScript(url);
-                    const elementToRemove = document.getElementById(urlToId(url));
-                    elementToRemove?.remove();
+                    removeUrlElement(urlToId(url));
                 }
 
-                emptyElementIsShown(newValue.length === 0);
+                emptyElementIsShown(newValue.urls.length === 0);
             }
         }
     });
@@ -105,48 +105,38 @@ async function INIT_EXTENSION() {
 
 async function addUrlToList(url) {
     if (url.protocol !== 'http:' && url.protocol !== 'https:'){
-        return;
+        return false;
     }
 
-    const data = await chrome.storage.sync.get({urlList: []});
-    const urlSet = new Set(data.urlList);
-    console.log('old', urlSet);
+    let bigData = await chrome.storage.sync.get(["bigMute"]);
+    const bigMute = bigData.bigMute ?? { urls: [] };
 
-    urlSet.add(urlToEntry(url));
-    console.log('new', urlSet);
-
-    chrome.storage.sync.set({urlList: [...urlSet]});
-
-
-
-
-    let bigData = await  chrome.storage.sync.get(["bigMute"]);
-
-    const newBigData = bigData.bigMute ?? { urls: [] };
-
-    if (newBigData.urls.some(elem => elem.id === urlToId(url))){
-        return;
+    if (bigMute.urls.some(elem => elem.id === urlToId(url))){
+        return false;
     }
 
-    newBigData.urls.push({
+    bigMute.urls.push({
         id: urlToId(url),
         entry: urlToEntry(url),
-        pos: {x: 200, y: 100}
+        pos: {x: 200, y: 100},
+        muted: false,
+        minimized: false
     });
-    chrome.storage.sync.set({['bigMute']: newBigData});
-
-    console.log('bigMute', newBigData);
+    chrome.storage.sync.set({['bigMute']: bigMute});
+    return true;
 }
 
 async function removeUrlFromList(urlEntry) {
-    const data = await chrome.storage.sync.get({urlList: []});
-    const urlSet = new Set(data.urlList);
-    console.log('old', urlSet);
+    const url = new URL(urlEntry);
+    let bigData = await chrome.storage.sync.get(["bigMute"]);
+    const bigMute = bigData.bigMute ?? { urls: [] };
 
-    if (urlSet.delete(urlEntry)) {
-        chrome.storage.sync.set({urlList: [...urlSet]});
+    const idx = bigMute.urls.findIndex(elem => elem.id === urlToId(url));
+    if (idx !== -1){
+        bigMute.urls.splice(idx, 1);
+        chrome.storage.sync.set({['bigMute']: bigMute});
     }
-    console.log('new', urlSet);
+    console.log('bigMute', bigMute);
 }
 
 function createUrlElement(url) {
@@ -191,6 +181,11 @@ function createUrlElement(url) {
     urlListElement.appendChild(listItemElement);
 }
 
+function removeUrlElement(id) {
+    const elementToRemove = document.getElementById(id);
+    elementToRemove?.remove();
+}
+
 function emptyElementIsShown(isShown) {
     document.getElementById('empty-url-item').style.display = isShown ? 'block' : 'none';
 }
@@ -201,6 +196,35 @@ function getFaviconURL(url) {
     favIconUrl.searchParams.set('pageUrl', url); // this encodes the URL as well
     favIconUrl.searchParams.set('size', '32');
     return favIconUrl.toString();
+}
+
+async function validateUrl(urlString) {
+    if (!urlString || urlString?.length === 0) {
+        return {valid: true};
+    }
+
+    let url;
+    try {
+        url = new URL(urlString);
+    } catch (e){
+        if (e instanceof TypeError) {
+            return {valid: false, message: "Invalid Urls!."};
+        } else {
+            return {valid: false, message: "Could not parse the provided Url!"};
+        }
+    }
+
+    if (url.protocol !== 'http:' && url.protocol !== 'https:'){
+        return {valid: false, message: "Invalid protocol! Must be 'http' or 'https'."};
+    }
+
+    let bigData = await chrome.storage.sync.get(["bigMute"]);
+    const bigMute = bigData.bigMute ?? { urls: [] };
+    const idx = bigMute.urls.findIndex(elem => elem.id === urlToId(url));
+    if (idx !== -1){
+        return {valid: false, message: "URL already added."};
+    }
+    return {valid: true};
 }
 
 async function getCurrentTab() {

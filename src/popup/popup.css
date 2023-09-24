@@ -5,6 +5,8 @@
     --color_text: #1D1B20;
     --color_text_gray: #8c8c8c;
     --color_secondary_transparent: rgba(77, 0, 203, 0.1);
+    --color_secondary_disabled: #b6b6b6;
+    --color_text_disabled: #696969;
 
     /* dimensions */
     --dim_button_border_radius: 4px;
@@ -131,21 +133,30 @@ main {
     border-radius: var(--dim_button_border_radius);
     overflow: hidden;
 }
+#add-url[disabled] {
+    border-color: var(--color_text_disabled);
+}
 
 #add-url-input {
     flex: auto;
     border: none;
     padding: 0.5em 0.5em 0.5em 1em;
+    outline-offset: 2px;
 }
 
 #add-url-button {
     display: inline-flex;
     align-items: center;
-    border: inherit;
+    border: none;
     color: var(--color_primary);
     background-color: var(--color_secondary);
     padding: 0.5em 1em;
     font-weight: bold;
+    cursor: pointer;
+}
+#add-url-button[disabled] {
+    background-color: var(--color_secondary_disabled);
+    cursor: not-allowed;
 }
 
 #add-active-url-button {
@@ -158,6 +169,11 @@ main {
     border-radius: var(--dim_button_border_radius);
     padding: 0.5em 1em;
     font-weight: bold;
+    cursor: pointer;
+}
+
+#add-active-url-button[disabled] {
+    display: none;
 }
 
 #add-active-url-text {

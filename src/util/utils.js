@@ -6,7 +6,9 @@ export function urlToEntry(url) {
     return `${url.protocol}//${url.hostname}/`;
 }
 
-
+export function hasValue(obj) {
+    return (obj !== undefined && obj !== null);
+}
 
 
 

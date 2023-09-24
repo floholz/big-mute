@@ -15,7 +15,6 @@ matSymLinkElement.rel = 'stylesheet';
 matSymLinkElement.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0';
 document.head.append(matSymLinkElement);
 
-let minimized = false;
 const bigMuteMinimize = document.createElement('button');
 bigMuteMinimize.id = 'bigMute_minimize';
 bigMuteMinimize.classList.add('material-symbols-outlined');
@@ -28,21 +27,7 @@ bigMuteMinimize.onmouseup = (e) =>  {
         return;
     }
     console.log('bigMuteMinimize clicked');
-    minimized = !minimized;
-    bigMuteMinimize.innerText = minimized ? 'unfold_more' : 'unfold_less';
-
-    if (minimized) {
-        bigMuteButton.classList.add('minimized');
-        bigMuteContent.classList.add('minimized');
-        bigMuteMinimize.classList.add('minimized');
-        bigMuteMainElement.classList.add('minimized');
-    } else {
-        bigMuteButton.classList.remove('minimized');
-        bigMuteContent.classList.remove('minimized');
-        bigMuteMinimize.classList.remove('minimized');
-        bigMuteMainElement.classList.remove('minimized');
-    }
-
+    setMinimized();
     e.preventDefault();
     e.stopImmediatePropagation();
 };
@@ -88,9 +73,10 @@ document.addEventListener('fullscreenchange', () => {
     placeContainerInRootElement();
 });
 
-document.addEventListener('mouseenter', () => {
-    getCurrentMuteState().then(setMuteButtonContent);
+document.addEventListener('mouseenter', async () => {
+    await syncMuteState();
 });
+
 
 
 
@@ -106,10 +92,34 @@ document.addEventListener('mousemove', function() {
     }, 650);
 });
 
-getCurrentMuteState().then(setMuteButtonContent);
 placeContainerInRootElement();
 dragElement(bigMuteMainElement, bigMuteContainer);
+initBigMuteOptions();
 
+
+async function setMinimized(minimized, saveChanges = true) {
+    const isMinimized = bigMuteContainer.classList.contains('minimized');
+
+    if (minimized === isMinimized) {
+        return;
+    }
+
+    if (minimized === null || minimized === undefined) {
+        minimized = !isMinimized;
+    }
+
+    if (minimized) {
+        bigMuteContainer.classList.add('minimized');
+        bigMuteMinimize.innerText = 'unfold_more';
+    } else {
+        bigMuteContainer.classList.remove('minimized');
+        bigMuteMinimize.innerText = 'unfold_less';
+    }
+
+    if (saveChanges) {
+        await setOptions({minimized: minimized});
+    }
+}
 
 function placeContainerInRootElement() {
     const fullscreenRoot = document.fullscreenElement;
@@ -138,7 +148,6 @@ function dragElement(element, container) {
         if (e.buttons !== 1) return;
         target = e.target;
 
-        console.log(e.target.id, e.type);
         clickIsHandledByDrag = true;
 
         // get the mouse cursor position at startup:
@@ -149,11 +158,10 @@ function dragElement(element, container) {
         document.addEventListener('mousemove', elementDrag, true);
     }
 
-    function elementDrag(e) {
+    async function elementDrag(e) {
         e = e || window.event;
         e.preventDefault();
         e.stopImmediatePropagation();
-        console.log(e.target.id, e.type);
         mouseDragged = true;
 
         const dragArea = container.getClientRects()[0];
@@ -188,15 +196,18 @@ function dragElement(element, container) {
 
     function closeDragElement(e) {
         const dist = Math.sqrt(Math.pow(initPosX - prevPosX, 2) + Math.pow(initPosY - prevPosY, 2));
-        console.log(e.target.id, e.type);
 
         if (mouseDragged && dist > 5) {
             console.log('btn dragged');
+
+            setOptions({pos: {x: element.style.left, y: element.style.top}}).then(r => {
+                console.log(r?.pos ? `position saved ${JSON.stringify(r.pos)}` : "couldn't save position");
+            });
+
             e.preventDefault();
             e.stopImmediatePropagation();
         } else {
             console.log('btn clicked');
-            // toggleMuteState();
             target.click();
         }
 
@@ -214,10 +225,35 @@ function setMuteButtonContent(muted) {
 
 async function toggleMuteState() {
     console.log('toggle mute state');
-    const response = await chrome.runtime.sendMessage({bigMute: {toggleMute: true}});
-    setMuteButtonContent(response);
+    const response = await chrome.runtime.sendMessage({bigMute: {setOptions: {muted: 'toggle'}}});
+    if (response) {
+        setMuteButtonContent(response.muted);
+    }
 }
 
-async function getCurrentMuteState() {
-    return await chrome.runtime.sendMessage({bigMute: {getMuteState: true}});
+async function setOptions(options) {
+    return await chrome.runtime.sendMessage({bigMute: {setOptions: options}});
+}
+
+async function initBigMuteOptions() {
+    const options = await chrome.runtime.sendMessage({bigMute: {getOptions: true}});
+
+    if (options) {
+        // set position
+        bigMuteMainElement.style.left = options.pos.x;
+        bigMuteMainElement.style.top = options.pos.y;
+
+        // set mute state
+        await syncMuteState();
+
+        // set minimized state
+        await setMinimized(options.minimized, false);
+    }
+}
+
+async function syncMuteState() {
+    const muteState = await chrome.runtime.sendMessage({bigMute: {syncMuteState: true}});
+    if (muteState !== undefined){
+        setMuteButtonContent(muteState);
+    }
 }

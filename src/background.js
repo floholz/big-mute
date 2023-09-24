@@ -1,4 +1,4 @@
-import {urlToId, urlToEntry} from "./util/utils.js";
+import {urlToId, hasValue} from "./util/utils.js";
 
 chrome.runtime.onInstalled.addListener(async ({reason}) => {
     if (reason === 'install') {
@@ -7,24 +7,24 @@ chrome.runtime.onInstalled.addListener(async ({reason}) => {
       });
     }
 
-    const data = await chrome.storage.sync.get({urlList: []});
-    const urlSet = new Set(data.urlList);
+    let bigData = await chrome.storage.sync.get(["bigMute"]);
+    const bigMute = bigData.bigMute ?? { urls: [] };
 
     const registeredScripts = await chrome.scripting.getRegisteredContentScripts();
     console.log(registeredScripts);
 
-    for (const urlEntry of urlSet) {
-        const url = new URL(urlEntry);
-        if (registeredScripts.some(script => script.id === urlToId(url))) continue;
+    for (const elem of bigMute.urls) {
+        const url = new URL(elem.entry);
+        if (registeredScripts.some(script => script.id === elem.id)) continue;
         chrome.scripting.registerContentScripts([{
-            id: urlToId(url),
+            id: elem.id,
             js: ["src/content/content.js"],
             css: ['src/content/content.css'],
             persistAcrossSessions: true,
-            matches: [urlEntry + '*'],
+            matches: [elem.entry + '*'],
             runAt: "document_idle",
         }])
-            .then(() => console.log("Registered script for " + urlEntry))
+            .then(() => console.log("Registered script for " + elem.entry))
             .catch((err) => console.warn("Could not register script!", err));
     }
   });
@@ -32,27 +32,78 @@ chrome.runtime.onInstalled.addListener(async ({reason}) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.bigMute) {
-        if (message.bigMute.toggleMute) {
-            toggleMuteState(sender.tab).then(sendResponse);
+        if (message.bigMute.syncMuteState) {
+            syncMuteState(sender.tab).then(sendResponse);
         }
-        if (message.bigMute.getMuteState) {
-            sendResponse(sender.tab.mutedInfo.muted);
+        if (message.bigMute.getOptions) {
+            getBigMuteOptions(urlToId(new URL(sender.tab.url))).then(sendResponse);
+        }
+        if (message.bigMute.setOptions) {
+            setBigMuteOptions(sender.tab, message.bigMute.setOptions).then(sendResponse);
         }
     }
     return true;
 });
 
-async function getCurrentTab() {
-    let queryOptions = { active: true, lastFocusedWindow: true };
-    // `tab` will either be a `tabs.Tab` instance or `undefined`.
-    let [tab] = await chrome.tabs.query(queryOptions);
-    return tab;
+async function syncMuteState(tab) {
+    const id = urlToId(new URL(tab.url));
+    let bigData = await chrome.storage.sync.get(["bigMute"]);
+    const bigMute = bigData.bigMute ?? { urls: [] };
+
+    const idx = bigMute.urls.findIndex(elem => elem.id === id);
+    if (idx === -1) {
+        return undefined;
+    }
+
+    if (bigMute.urls[idx].muted !== tab.mutedInfo.muted) {
+
+        if (tab.mutedInfo.reason === 'user') {
+            bigMute.urls[idx].muted = tab.mutedInfo.muted;
+            await chrome.storage.sync.set({['bigMute']: bigMute});
+        } else {
+            await chrome.tabs.update(tab.id, {muted: bigMute.urls[idx].muted});
+        }
+    }
+
+    return bigMute.urls[idx].muted;
 }
 
-async function toggleMuteState(tab) {
-    // const tab = await chrome.tabs.get(tabId);
-    const muted = !tab.mutedInfo.muted;
-    await chrome.tabs.update(tab.id, {muted});
-    console.log(`Tab ${tab.id} is ${muted ? "muted" : "unmuted"}`);
-    return muted;
+async function setBigMuteOptions(tab, options) {
+    const id = urlToId(new URL(tab.url));
+    let bigData = await chrome.storage.sync.get(["bigMute"]);
+    const bigMute = bigData.bigMute ?? { urls: [] };
+
+    const idx = bigMute.urls.findIndex(elem => elem.id === id);
+    if (idx === -1) {
+        return false;
+    }
+
+    if (options.pos) {
+        bigMute.urls[idx].pos = options.pos;
+    }
+    if (hasValue(options.minimized)) {
+        bigMute.urls[idx].minimized = options.minimized;
+    }
+    if (hasValue(options.muted)) {
+        if (options.muted === 'toggle') {
+            options.muted = !bigMute.urls[idx].muted;
+        }
+        await chrome.tabs.update(tab.id, {muted: options.muted});
+        bigMute.urls[idx].muted = options.muted;
+    }
+
+    await chrome.storage.sync.set({['bigMute']: bigMute});
+    return bigMute.urls[idx];
+}
+
+async function getBigMuteOptions(id) {
+    let bigData = await chrome.storage.sync.get(["bigMute"]);
+    const bigMute = bigData.bigMute ?? { urls: [] };
+
+    const idx = bigMute.urls.findIndex(elem => elem.id === id);
+    if (idx === -1) {
+        return false;
+    }
+
+    return bigMute.urls[idx];
 }
