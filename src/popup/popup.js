@@ -115,12 +115,16 @@ async function addUrlToList(url) {
         return false;
     }
 
+    const tab = await getCurrentTab();
+
     bigMute.urls.push({
         id: urlToId(url),
         entry: urlToEntry(url),
-        pos: {x: 200, y: 100},
+        pos: {x: "50%", y: "50%"},
         muted: false,
-        minimized: false
+        minimized: false,
+        sessionId: tab.sessionId,
+        originTabId: tab.id
     });
     chrome.storage.sync.set({['bigMute']: bigMute});
     return true;

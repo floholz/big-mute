@@ -1,24 +1,20 @@
-const overrideLog = console.log;
-console.log = function () {
-    // 1. Convert args to a normal array
-    const args = Array.from( arguments );
-    // 2. Prepend log prefix log string
-    args.unshift('[BIG_MUTE]');
-    // 3. Pass along arguments to console.log
-    overrideLog.apply(console, args);
-}
+const _ = '[BIG_MUTE]';
+console.log(_, 'injected');
 
-console.log('injected');
+const imgResources = {
+    volume_up: chrome.runtime.getURL('assets/volume_up.svg'),
+    volume_off: chrome.runtime.getURL('assets/volume_off.svg'),
+    unfold_more: chrome.runtime.getURL('assets/unfold_more.svg'),
+    unfold_less: chrome.runtime.getURL('assets/unfold_less.svg'),
+};
 
-const matSymLinkElement = document.createElement('link');
-matSymLinkElement.rel = 'stylesheet';
-matSymLinkElement.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0';
-document.head.append(matSymLinkElement);
+const bigMuteMinimizeImg = document.createElement('img');
+bigMuteMinimizeImg.id = 'bigMute_minimize_img';
+bigMuteMinimizeImg.src = imgResources.unfold_less;
 
 const bigMuteMinimize = document.createElement('button');
 bigMuteMinimize.id = 'bigMute_minimize';
-bigMuteMinimize.classList.add('material-symbols-outlined');
-bigMuteMinimize.innerText = 'unfold_less';
+bigMuteMinimize.append(bigMuteMinimizeImg);
 bigMuteMinimize.onmouseup = (e) =>  {
     if (e.button === 2) return; // ignore mouse2 events
     if (clickIsHandledByDrag) {
@@ -26,15 +22,21 @@ bigMuteMinimize.onmouseup = (e) =>  {
         e.stopImmediatePropagation();
         return;
     }
-    console.log('bigMuteMinimize clicked');
+    console.log(_, 'bigMuteMinimize clicked');
     setMinimized();
     e.preventDefault();
     e.stopImmediatePropagation();
 };
 
-const bigMuteContent = document.createElement('span');
+const imgSizes = ['1x', '2x', '0.5x']
+const bigMuteImg = document.createElement('img');
+bigMuteImg.id = 'bigMute_content_img';
+bigMuteImg.src = imgResources.volume_up;
+bigMuteImg.setAttribute('bigMute_size', imgSizes[0]);
+
+
+const bigMuteContent = document.createElement('div');
 bigMuteContent.id = 'bigMute_content';
-bigMuteContent.innerText = 'volume_up';
 bigMuteContent.onmouseup = (e) => {
     if (e.button === 2) return; // ignore mouse2 events
     if (clickIsHandledByDrag) {
@@ -42,10 +44,10 @@ bigMuteContent.onmouseup = (e) => {
         e.stopImmediatePropagation();
     }
 };
+bigMuteContent.append(bigMuteImg);
 
 const bigMuteButton = document.createElement('button');
 bigMuteButton.id = 'bigMute_button';
-bigMuteButton.classList.add('material-symbols-outlined');
 bigMuteButton.onmouseup = (e) => {
     if (e.button === 2) return; // ignore mouse2 events
     if (clickIsHandledByDrag) {
@@ -53,7 +55,7 @@ bigMuteButton.onmouseup = (e) => {
         e.stopImmediatePropagation();
         return;
     }
-    console.log('bigMuteButton clicked');
+    console.log(_, 'bigMuteButton clicked');
     toggleMuteState();
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -110,10 +112,10 @@ async function setMinimized(minimized, saveChanges = true) {
 
     if (minimized) {
         bigMuteContainer.classList.add('minimized');
-        bigMuteMinimize.innerText = 'unfold_more';
+        bigMuteMinimizeImg.src = imgResources.unfold_more;
     } else {
         bigMuteContainer.classList.remove('minimized');
-        bigMuteMinimize.innerText = 'unfold_less';
+        bigMuteMinimizeImg.src = imgResources.unfold_less;
     }
 
     if (saveChanges) {
@@ -145,7 +147,11 @@ function dragElement(element, container) {
         e.stopImmediatePropagation();
 
         // only listen for mouse1 events
-        if (e.buttons !== 1) return;
+        if (e.buttons !== 1) //return;
+        {
+            changeSize();
+        }
+
         target = e.target;
 
         clickIsHandledByDrag = true;
@@ -198,16 +204,16 @@ function dragElement(element, container) {
         const dist = Math.sqrt(Math.pow(initPosX - prevPosX, 2) + Math.pow(initPosY - prevPosY, 2));
 
         if (mouseDragged && dist > 5) {
-            console.log('btn dragged');
+            console.log(_, 'btn dragged');
 
             setOptions({pos: {x: element.style.left, y: element.style.top}}).then(r => {
-                console.log(r?.pos ? `position saved ${JSON.stringify(r.pos)}` : "couldn't save position");
+                console.log(_, r?.pos ? `position saved ${JSON.stringify(r.pos)}` : "couldn't save position");
             });
 
             e.preventDefault();
             e.stopImmediatePropagation();
         } else {
-            console.log('btn clicked');
+            console.log(_, 'btn clicked');
             target.click();
         }
 
@@ -220,11 +226,12 @@ function dragElement(element, container) {
 }
 
 function setMuteButtonContent(muted) {
-    bigMuteContent.innerHTML = muted ? 'volume_off' : 'volume_up';
+    // bigMuteContent.innerHTML = muted ? 'volume_off' : 'volume_up';
+    bigMuteImg.src = muted ? imgResources.volume_off : imgResources.volume_up;
 }
 
 async function toggleMuteState() {
-    console.log('toggle mute state');
+    console.log(_, 'toggle mute state');
     const response = await chrome.runtime.sendMessage({bigMute: {setOptions: {muted: 'toggle'}}});
     if (response) {
         setMuteButtonContent(response.muted);
@@ -256,4 +263,14 @@ async function syncMuteState() {
     if (muteState !== undefined){
         setMuteButtonContent(muteState);
     }
+}
+
+function changeSize(){
+    let size = bigMuteImg.getAttribute('bigMute_size');
+    if (!size) size = imgSizes[0];
+    let idx = imgSizes.findIndex(e => e === size);
+    if (idx === -1) idx = 0;
+    const newSize = imgSizes[++idx % imgSizes.length];
+    bigMuteImg.setAttribute('bigMute_size', newSize);
+    console.log(_, 'set size', newSize);
 }

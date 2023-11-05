@@ -5,6 +5,17 @@
     --color_secondary_transparent: rgba(77, 0, 203, 0.3);
     --color_text: #1D1B20;
     --color_text_gray: #8c8c8c;
+    --filter_svg: invert(100%) sepia(13%) saturate(89%) hue-rotate(155deg) brightness(112%) contrast(95%);
+}
+
+[bigMute_size='1x'] {
+    width: 1em !important;
+}
+[bigMute_size='2x'] {
+    width: 2em !important;
+}
+[bigMute_size='0.5x'] {
+    width: 0.5em !important;
 }
 
 #bigMute_container {
@@ -68,11 +79,26 @@
     position: relative;
 }
 
+#bigMute_minimize_img {
+    filter: var(--filter_svg);
+    width: 1em;
+}
+
 #bigMute_content {
     overflow: clip;
-    padding: 0.5em;
     pointer-events: none;
     color: inherit;
+    display: flex;
+}
+
+#bigMute_content_img {
+    filter: var(--filter_svg);
+    width: 1em;
+    margin: 0.5em;
+}
+
+#bigMute_content_img[bigMute_size='0.5x'] {
+    margin: 0.2em;
 }
 
 #bigMute_button {
